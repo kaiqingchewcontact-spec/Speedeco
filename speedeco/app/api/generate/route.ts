@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const maxDuration = 60 // Vercel Pro, or 10s on free — still helps
+
 const ARC_DEFINITIONS = {
   'problem-insight-reframe': {
     label: 'Problem → Insight → Reframe → CTA',
@@ -73,76 +75,10 @@ Rules for writing:
 - The final slide (CTA/takeaway/resolution/sowhat) should leave the reader changed`
 
 export async function POST(req: NextRequest) {
-  const { action, content, arcId } = await req.json()
+  try {
+    const { action, content, arcId } = await req.json()
 
-  if (!content) return NextResponse.json({ error: 'No content provided' }, { status: 400 })
+    if (!content) return NextResponse.json({ error: 'No content provided' }, { status: 400 })
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
-
-  if (action === 'detect') {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        system: DETECT_SYSTEM,
-        messages: [{ role: 'user', content: `Analyze this content and suggest the best arcs:\n\n${content.slice(0, 4000)}` }],
-      }),
-    })
-
-    const data = await response.json()
-    const text = data.content?.[0]?.text || '{}'
-    
-    try {
-      const parsed = JSON.parse(text)
-      const suggestions = parsed.suggestions.map((s: { arcId: string; reason: string; confidence: string }) => ({
-        ...s,
-        ...ARC_DEFINITIONS[s.arcId as keyof typeof ARC_DEFINITIONS],
-      }))
-      return NextResponse.json({ suggestions })
-    } catch {
-      return NextResponse.json({ error: 'Failed to parse arc suggestions' }, { status: 500 })
-    }
-  }
-
-  if (action === 'generate') {
-    const arc = ARC_DEFINITIONS[arcId as keyof typeof ARC_DEFINITIONS]
-    if (!arc) return NextResponse.json({ error: 'Invalid arc ID' }, { status: 400 })
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        system: GENERATE_SYSTEM(arcId, arc.slideRoles),
-        messages: [{
-          role: 'user',
-          content: `Generate slides for this content using the ${arc.label} arc:\n\n${content.slice(0, 6000)}`,
-        }],
-      }),
-    })
-
-    const data = await response.json()
-    const text = data.content?.[0]?.text || '{}'
-
-    try {
-      const parsed = JSON.parse(text)
-      return NextResponse.json({ slides: parsed.slides, arc })
-    } catch {
-      return NextResponse.json({ error: 'Failed to generate slides' }, { status: 500 })
-    }
-  }
-
-  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-}
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) return
