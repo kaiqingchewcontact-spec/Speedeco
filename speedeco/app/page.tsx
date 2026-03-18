@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useUser, useClerk, SignInButton, UserButton } from '@clerk/nextjs'
 
 type InputMode = 'text' | 'url'
-type AppState = 'input' | 'configure' | 'detecting' | 'generating' | 'output'
+type AppState = 'input' | 'configure' | 'detecting' | 'generating' | 'output' | 'history'
 type ViewMode = 'carousel' | 'grid'
 
 interface Slide {
@@ -11,6 +12,17 @@ interface Slide {
   headline: string
   subtext: string
   slideNumber: number
+}
+
+interface SavedDeck {
+  id: string
+  title: string
+  arc_id: string
+  format: string
+  tone: string
+  slide_count: number
+  slides: Slide[]
+  created_at: string
 }
 
 const ARCS = [
@@ -57,6 +69,12 @@ export default function Home() {
   const [copiedAll, setCopiedAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('carousel')
+
+  const { user, isSignedIn } = useUser()
+  const [savedDecks, setSavedDecks] = useState<SavedDeck[]>([])
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [loadingDecks, setLoadingDecks] = useState(false)
 
   const touchStartRef = useRef<number | null>(null)
 
@@ -193,6 +211,78 @@ export default function Home() {
     setTimeout(() => setCopiedAll(false), 2000)
   }
 
+  // ── Save deck to Supabase ──
+  async function handleSaveDeck() {
+    if (!isSignedIn) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/decks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: slides[0]?.headline?.slice(0, 60) || 'Untitled Deck',
+          source_content: content,
+          source_url: url || undefined,
+          arc_id: selectedArc,
+          format: selectedFormat,
+          tone: selectedTone,
+          slides,
+          slide_count: slides.length,
+        }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch (err) {
+      console.error('Save failed:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Load saved decks ──
+  async function loadDecks() {
+    if (!isSignedIn) return
+    setLoadingDecks(true)
+    try {
+      const res = await fetch('/api/decks')
+      const data = await res.json()
+      if (data.decks) setSavedDecks(data.decks)
+    } catch (err) {
+      console.error('Load failed:', err)
+    } finally {
+      setLoadingDecks(false)
+    }
+  }
+
+  // ── Delete a deck ──
+  async function handleDeleteDeck(deckId: string) {
+    try {
+      await fetch(`/api/decks?id=${deckId}`, { method: 'DELETE' })
+      setSavedDecks(prev => prev.filter(d => d.id !== deckId))
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
+  }
+
+  // ── Open a saved deck ──
+  function openDeck(deck: SavedDeck) {
+    setSlides(deck.slides)
+    setSelectedArc(deck.arc_id)
+    setSelectedFormat(deck.format)
+    setSelectedTone(deck.tone)
+    setSlideCount(deck.slide_count)
+    setCurrentSlide(0)
+    setAppState('output')
+  }
+
+  // ── Show history ──
+  function showHistory() {
+    loadDecks()
+    setAppState('history')
+  }
+
   function reset() {
     setAppState('input')
     setContent('')
@@ -245,19 +335,53 @@ export default function Home() {
             arc intelligence
           </span>
         </div>
-        {appState !== 'input' && (
-          <button onClick={reset} className="btn" style={{
-            fontSize: '0.75rem',
-            color: 'var(--muted)',
-            background: 'none',
-            border: '1px solid var(--border)',
-            padding: '0.4rem 1rem',
-            fontFamily: 'var(--font-mono)',
-            letterSpacing: '0.04em',
-          }}>
-            Start over
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {appState !== 'input' && (
+            <button onClick={reset} className="btn" style={{
+              fontSize: '0.75rem',
+              color: 'var(--muted)',
+              background: 'none',
+              border: '1px solid var(--border)',
+              padding: '0.4rem 1rem',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
+            }}>
+              Start over
+            </button>
+          )}
+          {isSignedIn && (
+            <button onClick={showHistory} className="btn" style={{
+              fontSize: '0.75rem',
+              color: 'var(--muted)',
+              background: 'none',
+              border: '1px solid var(--border)',
+              padding: '0.4rem 1rem',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.04em',
+            }}>
+              My Decks
+            </button>
+          )}
+          {isSignedIn ? (
+            <UserButton />
+          ) : (
+            <SignInButton mode="modal">
+              <button className="btn" style={{
+                fontSize: '0.75rem',
+                color: 'var(--paper)',
+                background: 'var(--ink)',
+                border: 'none',
+                padding: '0.4rem 1rem',
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.04em',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}>
+                Sign in
+              </button>
+            </SignInButton>
+          )}
+        </div>
       </header>
 
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
@@ -935,6 +1059,43 @@ export default function Home() {
               gap: '0.75rem',
               flexWrap: 'wrap',
             }}>
+              {isSignedIn && (
+                <button
+                  onClick={handleSaveDeck}
+                  disabled={saving || saved}
+                  className="btn"
+                  style={{
+                    background: saved ? 'var(--accent)' : 'var(--ink)',
+                    border: 'none',
+                    color: 'var(--paper)',
+                    padding: '0.55rem 1.25rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.72rem',
+                    borderRadius: '6px',
+                    letterSpacing: '0.04em',
+                    cursor: saving ? 'wait' : 'pointer',
+                  }}
+                >
+                  {saved ? '✓ Saved' : saving ? 'Saving...' : '♡ Save deck'}
+                </button>
+              )}
+              {!isSignedIn && (
+                <SignInButton mode="modal">
+                  <button className="btn" style={{
+                    background: 'var(--ink)',
+                    border: 'none',
+                    color: 'var(--paper)',
+                    padding: '0.55rem 1.25rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.72rem',
+                    borderRadius: '6px',
+                    letterSpacing: '0.04em',
+                    cursor: 'pointer',
+                  }}>
+                    Sign in to save
+                  </button>
+                </SignInButton>
+              )}
               <button onClick={handleGenerate} className="btn" style={{
                 background: 'none',
                 border: '1px solid var(--border)',
@@ -960,6 +1121,113 @@ export default function Home() {
                 ← Reconfigure
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════ HISTORY STATE ═══════════ */}
+        {appState === 'history' && (
+          <div className="fade-up">
+            <div style={{ marginBottom: '2rem' }}>
+              <p style={{
+                fontSize: '0.65rem',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '0.4rem',
+              }}>
+                Library
+              </p>
+              <h2 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.75rem',
+                letterSpacing: '-0.02em',
+              }}>
+                My Decks
+              </h2>
+            </div>
+
+            {loadingDecks ? (
+              <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '1rem' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="thinking-dot" style={{
+                      width: '8px', height: '8px', borderRadius: '50%', background: 'var(--ink)',
+                      animationDelay: `${i * 0.2}s`,
+                    }} />
+                  ))}
+                </div>
+                <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Loading your decks...</p>
+              </div>
+            ) : savedDecks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+                <p style={{ color: 'var(--muted)', fontSize: '0.92rem', marginBottom: '1rem' }}>
+                  No saved decks yet.
+                </p>
+                <button onClick={reset} className="btn" style={{
+                  background: 'var(--ink)',
+                  color: 'var(--paper)',
+                  border: 'none',
+                  padding: '0.75rem 2rem',
+                  fontSize: '0.85rem',
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                }}>
+                  Create your first deck →
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {savedDecks.map((deck, i) => (
+                  <div
+                    key={deck.id}
+                    className="fade-up"
+                    style={{
+                      animationDelay: `${i * 0.04}s`,
+                      opacity: 0,
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      padding: '1rem 1.15rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '1rem',
+                    }}
+                  >
+                    <div
+                      onClick={() => openDeck(deck)}
+                      style={{ flex: 1, cursor: 'pointer' }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.2rem' }}>
+                        {deck.title}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+                        {ARCS.find(a => a.id === deck.arc_id)?.label || deck.arc_id} · {deck.slide_count} slides · {new Date(deck.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteDeck(deck.id) }}
+                      className="btn"
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--border)',
+                        color: 'var(--muted)',
+                        padding: '0.35rem 0.75rem',
+                        fontSize: '0.65rem',
+                        fontFamily: 'var(--font-mono)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
