@@ -98,8 +98,9 @@ export default function Home() {
       if (data.error) throw new Error(data.error)
       setContent(data.text)
       return data.text
-    } catch {
-      setError('Could not fetch that URL. Try pasting the text directly.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError('Could not fetch URL: ' + msg)
       return null
     }
   }
@@ -143,12 +144,14 @@ export default function Home() {
       })
 
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      if (data.error) throw new Error(data.error + (data.detail ? ' — ' + JSON.stringify(data.detail) : ''))
+      if (!data.slides || !Array.isArray(data.slides)) throw new Error('No slides returned. Response: ' + JSON.stringify(data).slice(0, 200))
       setSlides(data.slides)
       setCurrentSlide(0)
       setAppState('output')
-    } catch {
-      setError('Generation failed. Try again.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError('Generation failed: ' + msg)
       setAppState('configure')
     }
   }
