@@ -158,16 +158,37 @@ export default function Home() {
 
   function copySlide(slide: Slide, index: number) {
     const text = slide.subtext ? `${slide.headline}\n\n${slide.subtext}` : slide.headline
-    navigator.clipboard.writeText(text)
+    // Try modern clipboard API first, fallback to execCommand
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text))
+    } else {
+      fallbackCopy(text)
+    }
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 1500)
+  }
+
+  function fallbackCopy(text: string) {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
   }
 
   function copyAll() {
     const text = slides.map((s, i) =>
       `— Slide ${i + 1} (${ROLE_LABELS[s.role] || s.role}) —\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`
     ).join('\n\n')
-    navigator.clipboard.writeText(text)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text))
+    } else {
+      fallbackCopy(text)
+    }
     setCopiedAll(true)
     setTimeout(() => setCopiedAll(false), 2000)
   }
@@ -845,6 +866,7 @@ export default function Home() {
                       animationDelay: `${i * 0.06}s`,
                       opacity: 0,
                       background: copiedIndex === i ? 'var(--accent)' : 'var(--ink)',
+                      position: 'relative',
                     }}
                     onClick={() => copySlide(slide, i)}
                   >
@@ -877,8 +899,28 @@ export default function Home() {
                         </p>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.6rem', opacity: 0.2, fontFamily: 'var(--font-mono)' }}>
-                      click to copy
+                    <div className="copy-hint" style={{
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                      <span style={{ opacity: copiedIndex === i ? 1 : 0.2 }}>
+                        {copiedIndex === i ? '✓ copied to clipboard' : 'click to copy'}
+                      </span>
+                      <span style={{
+                        background: 'var(--paper)',
+                        color: 'var(--ink)',
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: '4px',
+                        fontSize: '0.6rem',
+                        fontWeight: 600,
+                        opacity: 0,
+                        transition: 'opacity 0.15s ease',
+                      }} className="copy-btn-hover">
+                        COPY
+                      </span>
                     </div>
                   </div>
                 ))}
