@@ -144,7 +144,7 @@ export default function Home() {
       })
 
       const data = await res.json()
-      if (data.error) throw new Error(data.error + (data.detail ? ' — ' + JSON.stringify(data.detail) : ''))
+      if (data.error) throw new Error(data.error + (data.detail ? ' — ' + JSON.stringify(data.detail) : '') + (data.debug ? ' | Debug: ' + data.debug : ''))
       if (!data.slides || !Array.isArray(data.slides)) throw new Error('No slides returned. Response: ' + JSON.stringify(data).slice(0, 200))
       setSlides(data.slides)
       setCurrentSlide(0)

@@ -139,14 +139,27 @@ export async function POST(req: NextRequest) {
       }
 
       const data = await response.json()
-      const text = data.content?.[0]?.text || '{}'
+      const rawText = data.content?.[0]?.text || ''
+
+      // Strip markdown code fences if present
+      const cleanText = rawText
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim()
+
+      if (!cleanText) {
+        return NextResponse.json({ error: 'Empty response from Claude', debug: rawText.slice(0, 300) }, { status: 500 })
+      }
 
       try {
-        const parsed = JSON.parse(text)
+        const parsed = JSON.parse(cleanText)
+        if (!parsed.slides || !Array.isArray(parsed.slides)) {
+          return NextResponse.json({ error: 'Response missing slides array', debug: cleanText.slice(0, 300) }, { status: 500 })
+        }
         return NextResponse.json({ slides: parsed.slides, arc })
       } catch {
-        console.error('Failed to parse slides JSON:', text.slice(0, 200))
-        return NextResponse.json({ error: 'Failed to generate slides — please try again' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to parse slides JSON', debug: cleanText.slice(0, 300) }, { status: 500 })
       }
     }
 
