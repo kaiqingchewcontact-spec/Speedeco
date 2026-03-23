@@ -336,6 +336,15 @@ export default function Home() {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <a href="/blog" style={{
+            fontSize: '0.75rem',
+            color: 'var(--muted)',
+            textDecoration: 'none',
+            fontFamily: 'var(--font-mono)',
+            letterSpacing: '0.04em',
+          }}>
+            Blog
+          </a>
           {appState !== 'input' && (
             <button onClick={reset} className="btn" style={{
               fontSize: '0.75rem',
