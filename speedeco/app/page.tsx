@@ -356,7 +356,7 @@ export default function Home() {
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
           }}>
-            arc intelligence
+            narrative ai
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -430,12 +430,15 @@ export default function Home() {
                 letterSpacing: '-0.03em',
                 marginBottom: '0.75rem',
               }}>
-                Paste your thinking.<br />
-                <em>Walk away with a deck.</em>
+                Turn any text into a presentation<br />
+                <em>worth sharing.</em>
               </h1>
               <p style={{ color: 'var(--muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>
-                Drop an article, brain dump, conversation, or URL. Speedeco reads the structure and
-                builds slides that carry the weight of your original thinking.
+                Articles, transcripts, or messy notes — our Narrative AI preserves your thinking while handling the design. Paste anything. Get a deck in seconds.
+              </p>
+              {/* Trust line */}
+              <p style={{ color: 'var(--muted)', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', marginTop: '0.75rem', letterSpacing: '0.04em' }}>
+                No signup required · Takes 30 seconds · Export to PPT / PDF
               </p>
             </div>
 
@@ -562,10 +565,10 @@ export default function Home() {
             {/* Hints grid */}
             <div style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
               {[
-                { label: 'Long-form essays', hint: 'Articles, blog posts, LinkedIn' },
-                { label: 'Brain dumps', hint: 'Rough notes, voice-to-text' },
-                { label: 'Conversations', hint: 'Transcripts, chat exports' },
-                { label: 'Saved URLs', hint: 'Articles, threads, newsletters' },
+                { label: 'Essays → Key insight slides', hint: 'Articles, blog posts, LinkedIn' },
+                { label: 'Messy notes → Clear takeaways', hint: 'Brain dumps, voice-to-text' },
+                { label: 'Transcripts → Action items', hint: 'Meeting recordings, chat exports' },
+                { label: 'URLs → Executive summaries', hint: 'Articles, threads, newsletters' },
               ].map(item => (
                 <div key={item.label} style={{
                   padding: '0.8rem 1rem',
@@ -1168,6 +1171,158 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* ═══ BELOW FOLD — ONLY ON INPUT STATE ═══ */}
+      {appState === 'input' && (
+        <>
+          {/* ── Output Gallery ── */}
+          <section style={{ maxWidth: '800px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
+                See what Speedeco creates
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--muted)', maxWidth: '420px', margin: '0 auto' }}>
+                Real examples from real content. No templates — just your thinking, structured into slides.
+              </p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              {[
+                { input: '2,000-word blog post', output: '6-slide narrative deck', title: 'The Essay', detail: '"Why Remote Work Needs Async Communication" → Problem statement, 3 frameworks, conclusion with CTA' },
+                { input: '45-min Zoom transcript', output: 'Executive summary deck', title: 'The Transcript', detail: 'Client meeting recording → Decisions made, action items, owners assigned' },
+                { input: 'Voice-to-text brain dump', output: 'Prioritized roadmap', title: 'The Brain Dump', detail: 'Q3 strategy ramble → Timeline, resource allocation, key milestones' },
+              ].map((ex) => (
+                <div key={ex.title} style={{
+                  background: 'var(--ink)', color: 'var(--paper)', borderRadius: '10px',
+                  padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
+                }}>
+                  <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ex.title}</span>
+                  <div>
+                    <p style={{ fontSize: '0.7rem', color: 'rgba(245,242,237,0.4)', fontFamily: 'var(--font-mono)', marginBottom: '0.3rem' }}>Input: {ex.input}</p>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>Output: {ex.output}</p>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', lineHeight: 1.5, color: 'rgba(245,242,237,0.7)' }}>{ex.detail}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── How it works ── */}
+          <section style={{ maxWidth: '700px', margin: '0 auto', padding: '2rem 1.5rem 3rem' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontStyle: 'italic', textAlign: 'center', marginBottom: '2rem' }}>
+              From chaos to clarity in three steps
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', backgroundColor: 'var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+              {[
+                { num: '01', label: 'Dump', desc: 'Paste a URL, upload a document, or drop in rough notes. We accept text, PDFs, even chat transcripts.' },
+                { num: '02', label: 'Structure', desc: 'Our AI identifies your narrative arc — key arguments, supporting points, conclusions — then maps them to slide logic.' },
+                { num: '03', label: 'Polish', desc: 'Get presentation-ready slides with smart layouts and consistent typography. Edit in-browser or export to PowerPoint.' },
+              ].map((step) => (
+                <div key={step.num} style={{ background: 'var(--paper)', padding: '1.25rem' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--accent)', letterSpacing: '0.06em' }}>{step.num}</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontStyle: 'italic', margin: '0.3rem 0 0.2rem' }}>{step.label}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>{step.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Use cases ── */}
+          <section style={{ background: 'var(--surface)', padding: '3rem 1.5rem' }}>
+            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontStyle: 'italic', textAlign: 'center', marginBottom: '2rem' }}>
+                Built for how modern teams actually work
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {[
+                  { title: 'For Founders', desc: 'Turn investor updates and pivot narratives into board-ready presentations without losing the plot.' },
+                  { title: 'For Consultants', desc: 'Transform client discovery transcripts into structured recommendations in minutes, not hours.' },
+                  { title: 'For Marketers', desc: 'Repurpose long-form content into slide decks for LinkedIn, SlideShare, and sales enablement.' },
+                  { title: 'For Educators', desc: 'Convert lecture notes or research papers into digestible lesson decks for students.' },
+                ].map((uc) => (
+                  <div key={uc.title} style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--paper)' }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontStyle: 'italic', marginBottom: '0.3rem' }}>{uc.title}</h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>{uc.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Comparison ── */}
+          <section style={{ maxWidth: '600px', margin: '0 auto', padding: '3rem 1.5rem' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontStyle: 'italic', textAlign: 'center', marginBottom: '0.5rem' }}>
+              Presentation tools design slides. We design narratives.
+            </h2>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '1.5rem' }}>
+              Gamma helps you make slides. Speedeco helps you make your case.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ padding: '0.7rem 1rem', background: 'var(--surface)', borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)', fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Others</div>
+              <div style={{ padding: '0.7rem 1rem', background: 'var(--ink)', borderBottom: '1px solid var(--border)', fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--paper)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Speedeco</div>
+              {[
+                ['Start from templates', 'Start from your existing content'],
+                ['AI generates generic text', 'AI extracts your key points'],
+                ['Focus on visual polish', 'Focus on argument structure'],
+                ['Best for blank-page starts', 'Best for content-heavy topics'],
+              ].map(([left, right], i) => (
+                <div key={i} style={{ display: 'contents' }}>
+                  <div style={{ padding: '0.6rem 1rem', fontSize: '0.75rem', color: 'var(--muted)', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', borderRight: '1px solid var(--border)' }}>{left}</div>
+                  <div style={{ padding: '0.6rem 1rem', fontSize: '0.75rem', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', fontWeight: 500 }}>{right}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── FAQ ── */}
+          <section style={{ background: 'var(--surface)', padding: '3rem 1.5rem' }}>
+            <div style={{ maxWidth: '580px', margin: '0 auto' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontStyle: 'italic', textAlign: 'center', marginBottom: '1.5rem' }}>
+                Frequently asked questions
+              </h2>
+              {[
+                { q: 'What can I upload to Speedeco?', a: 'URLs (articles, blog posts), text files, Word documents, PDFs, or paste raw text directly. Max 50,000 words per upload.' },
+                { q: 'How is this different from Gamma or Beautiful.ai?', a: 'Gamma excels at visual storytelling from scratch. Beautiful.ai masters template-based design. Speedeco specializes in content transformation — taking your existing long-form thinking and distilling it into slide format without losing nuance.' },
+                { q: 'Can I edit the slides after generation?', a: 'Fully. Edit text directly on each slide, reorder slides, change themes and font sizes, or regenerate specific sections. Export to PowerPoint or PDF.' },
+                { q: 'How long does it take?', a: 'Most decks generate in under 60 seconds. A 10,000-word whitepaper might take 90 seconds.' },
+                { q: 'Is my content secure?', a: 'We never train models on your data. Uploads are encrypted, processed, then deleted from our servers after generation.' },
+                { q: 'What\'s the pricing?', a: 'Free during beta — generate unlimited decks. Paid plans coming soon with premium themes, team collaboration, and PowerPoint export.' },
+              ].map((faq, i) => (
+                <div key={i} style={{ borderBottom: '1px solid var(--border)', padding: '0.8rem 0' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontStyle: 'italic', cursor: 'default' }}>{faq.q}</div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginTop: '0.4rem' }}>{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Final CTA ── */}
+          <section style={{ maxWidth: '500px', margin: '0 auto', padding: '4rem 1.5rem', textAlign: 'center' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem, 3.5vw, 1.8rem)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
+              Stop building decks from scratch.
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Your best thinking already exists. Speedeco turns it into a presentation worth sharing.
+            </p>
+            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="btn" style={{
+              background: 'var(--ink)', color: 'var(--paper)', border: 'none',
+              padding: '0.75rem 2rem', fontSize: '0.85rem', fontFamily: 'var(--font-body)',
+              fontWeight: 600, borderRadius: '8px', cursor: 'pointer',
+            }}>
+              Paste your first text ↑
+            </button>
+          </section>
+
+          {/* ── Footer ── */}
+          <footer style={{ borderTop: '1px solid var(--border)', padding: '1.5rem' }}>
+            <div style={{ maxWidth: '700px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>&copy; 2026 Speedeco · Arc Intelligence</span>
+              <div style={{ display: 'flex', gap: '1.25rem' }}>
+                <a href="/blog" style={{ fontSize: '0.7rem', color: 'var(--muted)', textDecoration: 'none', fontFamily: 'var(--font-mono)' }}>Blog</a>
+              </div>
+            </div>
+          </footer>
+        </>
+      )}
     </main>
   )
 }
