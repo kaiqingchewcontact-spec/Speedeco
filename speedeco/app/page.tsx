@@ -369,6 +369,15 @@ export default function Home() {
           }}>
             Blog
           </a>
+          <a href="/pricing" style={{
+            fontSize: '0.75rem',
+            color: 'var(--muted)',
+            textDecoration: 'none',
+            fontFamily: 'var(--font-mono)',
+            letterSpacing: '0.04em',
+          }}>
+            Pricing
+          </a>
           {appState !== 'input' && (
             <button onClick={reset} className="btn" style={{
               fontSize: '0.75rem',
