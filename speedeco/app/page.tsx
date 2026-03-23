@@ -190,52 +190,57 @@ export default function Home() {
   }
 
   function copySlide(slide: Slide, index: number) {
-    const html = `<div style="font-family:${theme.headlineFont};font-size:${getHeadlinePx()};color:${theme.fg};font-weight:bold;line-height:1.2;margin-bottom:8px;">${slide.headline}</div>${slide.subtext ? `<div style="font-family:${theme.bodyFont};font-size:${getSubtextPx()};color:${theme.muted};line-height:1.5;">${slide.subtext}</div>` : ''}`
-    const plain = slide.subtext ? `${slide.headline}\n\n${slide.subtext}` : slide.headline
-    copyRich(html, plain)
+    const html = `<p style="font-family:${theme.headlineFont.replace(/'/g, '')};font-size:${getHeadlinePx()};font-weight:bold;line-height:1.3;">${slide.headline}</p>${slide.subtext ? `<p style="font-family:${theme.bodyFont.replace(/'/g, '')};font-size:${getSubtextPx()};line-height:1.5;">${slide.subtext}</p>` : ''}`
+    copyRichHTML(html)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 1500)
   }
 
   function copyAll() {
     const htmlSlides = slides.map((s, i) =>
-      `<div style="margin-bottom:24px;padding:20px;background:${theme.bg};border-radius:8px;">` +
-      `<div style="font-family:${theme.bodyFont};font-size:10px;color:${theme.muted};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Slide ${i + 1} · ${ROLE_LABELS[s.role] || s.role}</div>` +
-      `<div style="font-family:${theme.headlineFont};font-size:${getHeadlinePx()};color:${theme.fg};font-weight:bold;line-height:1.2;margin-bottom:6px;">${s.headline}</div>` +
-      (s.subtext ? `<div style="font-family:${theme.bodyFont};font-size:${getSubtextPx()};color:${theme.muted};line-height:1.5;">${s.subtext}</div>` : '') +
-      `</div>`
+      `<p style="font-size:11px;font-weight:bold;margin-bottom:2px;">— Slide ${i + 1} (${ROLE_LABELS[s.role] || s.role}) —</p>` +
+      `<p style="font-family:${theme.headlineFont.replace(/'/g, '')};font-size:${getHeadlinePx()};font-weight:bold;line-height:1.3;">${s.headline}</p>` +
+      (s.subtext ? `<p style="font-family:${theme.bodyFont.replace(/'/g, '')};font-size:${getSubtextPx()};line-height:1.5;">${s.subtext}</p>` : '') +
+      `<br/>`
     ).join('')
-    const html = `<div>${htmlSlides}</div>`
-    const plain = slides.map((s, i) =>
-      `— Slide ${i + 1} (${ROLE_LABELS[s.role] || s.role}) —\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`
-    ).join('\n\n')
-    copyRich(html, plain)
+    copyRichHTML(htmlSlides)
     setCopiedAll(true)
     setTimeout(() => setCopiedAll(false), 2000)
   }
 
-  function copyRich(html: string, plainText: string) {
-    if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-      const htmlBlob = new Blob([html], { type: 'text/html' })
-      const textBlob = new Blob([plainText], { type: 'text/plain' })
-      navigator.clipboard.write([
-        new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })
-      ]).catch(() => fallbackCopy(plainText))
-    } else {
-      fallbackCopy(plainText)
-    }
-  }
+  function copyRichHTML(html: string) {
+    // Create a hidden container with the styled HTML
+    const container = document.createElement('div')
+    container.innerHTML = html
+    container.style.position = 'fixed'
+    container.style.left = '-9999px'
+    container.style.top = '0'
+    container.setAttribute('contenteditable', 'true')
+    document.body.appendChild(container)
 
-  function fallbackCopy(text: string) {
-    const textarea = document.createElement('textarea')
-    textarea.value = text
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.focus()
-    textarea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textarea)
+    // Select the content
+    const range = document.createRange()
+    range.selectNodeContents(container)
+    const selection = window.getSelection()
+    if (selection) {
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
+
+    // Copy
+    try {
+      document.execCommand('copy')
+    } catch {
+      // Fallback to plain text
+      const plain = container.textContent || ''
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(plain).catch(() => {})
+      }
+    }
+
+    // Cleanup
+    if (selection) selection.removeAllRanges()
+    document.body.removeChild(container)
   }
 
   // ── Save deck to Supabase ──
