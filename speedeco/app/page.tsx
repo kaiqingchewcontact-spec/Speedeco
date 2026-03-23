@@ -179,16 +179,51 @@ export default function Home() {
     }
   }
 
+  // Rich text copy helpers
+  function getHeadlinePx(): string {
+    const sizes = ['16px', '20px', '24px', '30px', '36px']
+    return sizes[headlineSize - 1] || '24px'
+  }
+  function getSubtextPx(): string {
+    const sizes = ['11px', '13px', '14px', '16px', '18px']
+    return sizes[subtextSize - 1] || '13px'
+  }
+
   function copySlide(slide: Slide, index: number) {
-    const text = slide.subtext ? `${slide.headline}\n\n${slide.subtext}` : slide.headline
-    // Try modern clipboard API first, fallback to execCommand
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text))
-    } else {
-      fallbackCopy(text)
-    }
+    const html = `<div style="font-family:${theme.headlineFont};font-size:${getHeadlinePx()};color:${theme.fg};font-weight:bold;line-height:1.2;margin-bottom:8px;">${slide.headline}</div>${slide.subtext ? `<div style="font-family:${theme.bodyFont};font-size:${getSubtextPx()};color:${theme.muted};line-height:1.5;">${slide.subtext}</div>` : ''}`
+    const plain = slide.subtext ? `${slide.headline}\n\n${slide.subtext}` : slide.headline
+    copyRich(html, plain)
     setCopiedIndex(index)
     setTimeout(() => setCopiedIndex(null), 1500)
+  }
+
+  function copyAll() {
+    const htmlSlides = slides.map((s, i) =>
+      `<div style="margin-bottom:24px;padding:20px;background:${theme.bg};border-radius:8px;">` +
+      `<div style="font-family:${theme.bodyFont};font-size:10px;color:${theme.muted};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Slide ${i + 1} · ${ROLE_LABELS[s.role] || s.role}</div>` +
+      `<div style="font-family:${theme.headlineFont};font-size:${getHeadlinePx()};color:${theme.fg};font-weight:bold;line-height:1.2;margin-bottom:6px;">${s.headline}</div>` +
+      (s.subtext ? `<div style="font-family:${theme.bodyFont};font-size:${getSubtextPx()};color:${theme.muted};line-height:1.5;">${s.subtext}</div>` : '') +
+      `</div>`
+    ).join('')
+    const html = `<div>${htmlSlides}</div>`
+    const plain = slides.map((s, i) =>
+      `— Slide ${i + 1} (${ROLE_LABELS[s.role] || s.role}) —\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`
+    ).join('\n\n')
+    copyRich(html, plain)
+    setCopiedAll(true)
+    setTimeout(() => setCopiedAll(false), 2000)
+  }
+
+  function copyRich(html: string, plainText: string) {
+    if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+      const htmlBlob = new Blob([html], { type: 'text/html' })
+      const textBlob = new Blob([plainText], { type: 'text/plain' })
+      navigator.clipboard.write([
+        new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })
+      ]).catch(() => fallbackCopy(plainText))
+    } else {
+      fallbackCopy(plainText)
+    }
   }
 
   function fallbackCopy(text: string) {
@@ -201,19 +236,6 @@ export default function Home() {
     textarea.select()
     document.execCommand('copy')
     document.body.removeChild(textarea)
-  }
-
-  function copyAll() {
-    const text = slides.map((s, i) =>
-      `— Slide ${i + 1} (${ROLE_LABELS[s.role] || s.role}) —\n${s.headline}${s.subtext ? '\n' + s.subtext : ''}`
-    ).join('\n\n')
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text))
-    } else {
-      fallbackCopy(text)
-    }
-    setCopiedAll(true)
-    setTimeout(() => setCopiedAll(false), 2000)
   }
 
   // ── Save deck to Supabase ──
