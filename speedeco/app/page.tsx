@@ -76,6 +76,11 @@ export default function Home() {
   const [saved, setSaved] = useState(false)
   const [loadingDecks, setLoadingDecks] = useState(false)
 
+  // Editor theme state
+  const [editorTheme, setEditorTheme] = useState('editorial')
+  const [headlineSize, setHeadlineSize] = useState(3) // 1-5 scale
+  const [subtextSize, setSubtextSize] = useState(2) // 1-5 scale
+
   const touchStartRef = useRef<number | null>(null)
 
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length
@@ -298,6 +303,25 @@ export default function Home() {
 
   const arcLabel = ARCS.find(a => a.id === selectedArc)?.label || ''
   const toneLabel = TONES.find(t => t.id === selectedTone)?.label || ''
+
+  // Editor themes
+  const THEMES: Record<string, { name: string; bg: string; fg: string; muted: string; headlineFont: string; bodyFont: string; accent: string }> = {
+    editorial: { name: 'Editorial', bg: '#0f0e0c', fg: '#f5f2ed', muted: 'rgba(245,242,237,0.4)', headlineFont: "'Instrument Serif', serif", bodyFont: "'Syne', sans-serif", accent: '#c8522a' },
+    mono: { name: 'Monospace', bg: '#1a1a2e', fg: '#e0e0e0', muted: 'rgba(224,224,224,0.4)', headlineFont: "'DM Mono', monospace", bodyFont: "'DM Mono', monospace", accent: '#4ecca3' },
+    bold: { name: 'Bold', bg: '#ffffff', fg: '#111111', muted: 'rgba(17,17,17,0.4)', headlineFont: "'Syne', sans-serif", bodyFont: "'Syne', sans-serif", accent: '#ff4444' },
+    warm: { name: 'Warm', bg: '#2c1810', fg: '#f0d9c0', muted: 'rgba(240,217,192,0.4)', headlineFont: "'Instrument Serif', serif", bodyFont: "'Syne', sans-serif", accent: '#d4956a' },
+    clean: { name: 'Clean', bg: '#f8f8f8', fg: '#222222', muted: 'rgba(34,34,34,0.35)', headlineFont: "'Syne', sans-serif", bodyFont: "'DM Mono', monospace", accent: '#2563eb' },
+    noir: { name: 'Noir', bg: '#000000', fg: '#ffffff', muted: 'rgba(255,255,255,0.3)', headlineFont: "'Instrument Serif', serif", bodyFont: "'DM Mono', monospace", accent: '#ffffff' },
+    paper: { name: 'Paper', bg: '#f5f0e8', fg: '#1a1612', muted: 'rgba(26,22,18,0.4)', headlineFont: "'Instrument Serif', serif", bodyFont: "'Syne', sans-serif", accent: '#8b5e3c' },
+  }
+  const theme = THEMES[editorTheme] || THEMES.editorial
+
+  const HSIZES = ['clamp(1rem, 3vw, 1.3rem)', 'clamp(1.2rem, 3.5vw, 1.6rem)', 'clamp(1.4rem, 4vw, 2rem)', 'clamp(1.7rem, 5vw, 2.5rem)', 'clamp(2rem, 6vw, 3rem)']
+  const SSIZES = ['0.7rem', '0.8rem', '0.9rem', '1rem', '1.1rem']
+
+  function updateSlideText(index: number, field: 'headline' | 'subtext', value: string) {
+    setSlides(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s))
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--paper)' }}>
@@ -790,345 +814,249 @@ export default function Home() {
           </div>
         )}
 
-        {/* ═══════════ OUTPUT STATE ═══════════ */}
+        {/* ═══════════ OUTPUT STATE — SLIDE EDITOR ═══════════ */}
         {appState === 'output' && (
           <div className="fade-up">
-            {/* Header */}
+            {/* Editor toolbar */}
             <div style={{
-              marginBottom: '1.5rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: '1rem',
+              marginBottom: '1rem',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+              flexWrap: 'wrap', gap: '0.75rem',
             }}>
               <div>
                 <p style={{
-                  fontSize: '0.65rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  marginBottom: '0.2rem',
+                  fontSize: '0.6rem', fontFamily: 'var(--font-mono)',
+                  color: 'var(--accent)', textTransform: 'uppercase',
+                  letterSpacing: '0.1em', marginBottom: '0.15rem',
                 }}>
-                  {slides.length} slides ready
+                  {slides.length} slides · {THEMES[editorTheme].name} theme
                 </p>
-                <h2 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.5rem',
-                  letterSpacing: '-0.02em',
-                }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', letterSpacing: '-0.02em' }}>
                   {arcLabel}
                 </h2>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                 <button onClick={copyAll} className="btn" style={{
                   background: copiedAll ? 'var(--accent)' : 'var(--ink)',
-                  color: 'var(--paper)',
-                  border: 'none',
-                  padding: '0.55rem 1.1rem',
-                  fontSize: '0.75rem',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600,
-                  borderRadius: '6px',
+                  color: 'var(--paper)', border: 'none',
+                  padding: '0.5rem 1rem', fontSize: '0.7rem',
+                  fontFamily: 'var(--font-body)', fontWeight: 600, borderRadius: '6px',
                 }}>
                   {copiedAll ? 'Copied ✓' : 'Copy all'}
                 </button>
-                <button
-                  onClick={() => setViewMode(v => v === 'carousel' ? 'grid' : 'carousel')}
-                  className="btn"
-                  style={{
-                    background: 'none',
-                    color: 'var(--muted)',
-                    border: '1px solid var(--border)',
-                    padding: '0.55rem 1rem',
-                    fontSize: '0.75rem',
-                    fontFamily: 'var(--font-mono)',
-                    borderRadius: '6px',
-                  }}
-                >
-                  {viewMode === 'carousel' ? 'Grid view' : 'Carousel'}
+                <button onClick={() => setViewMode(v => v === 'carousel' ? 'grid' : 'carousel')}
+                  className="btn" style={{
+                    background: 'none', color: 'var(--muted)', border: '1px solid var(--border)',
+                    padding: '0.5rem 0.85rem', fontSize: '0.7rem',
+                    fontFamily: 'var(--font-mono)', borderRadius: '6px',
+                  }}>
+                  {viewMode === 'carousel' ? 'Grid' : 'Carousel'}
                 </button>
               </div>
             </div>
 
-            {/* ── Carousel View ── */}
+            {/* Theme + Font Controls */}
+            <div style={{
+              padding: '0.75rem', marginBottom: '1rem',
+              border: '1px solid var(--border)', borderRadius: '10px', background: 'var(--surface)',
+            }}>
+              <div style={{ marginBottom: '0.6rem' }}>
+                <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Theme</span>
+                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                  {Object.entries(THEMES).map(([key, t]) => (
+                    <button key={key} onClick={() => setEditorTheme(key)} className="btn" style={{
+                      padding: '0.3rem 0.6rem', fontSize: '0.65rem', fontFamily: 'var(--font-mono)', borderRadius: '5px',
+                      border: editorTheme === key ? `2px solid ${t.accent}` : '1px solid var(--border)',
+                      background: t.bg, color: t.fg, cursor: 'pointer', letterSpacing: '0.02em',
+                    }}>{t.name}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <div>
+                  <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Headline size</span>
+                  <div style={{ display: 'flex', gap: '0.2rem', marginTop: '0.25rem' }}>
+                    {[1,2,3,4,5].map((s) => (
+                      <button key={s} onClick={() => setHeadlineSize(s)} className="btn" style={{
+                        width: '28px', height: '24px', fontSize: '0.6rem', fontFamily: 'var(--font-mono)', borderRadius: '4px',
+                        border: headlineSize === s ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: headlineSize === s ? 'var(--ink)' : 'transparent',
+                        color: headlineSize === s ? 'var(--paper)' : 'var(--muted)', cursor: 'pointer',
+                      }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Subtext size</span>
+                  <div style={{ display: 'flex', gap: '0.2rem', marginTop: '0.25rem' }}>
+                    {[1,2,3,4,5].map((s) => (
+                      <button key={s} onClick={() => setSubtextSize(s)} className="btn" style={{
+                        width: '28px', height: '24px', fontSize: '0.6rem', fontFamily: 'var(--font-mono)', borderRadius: '4px',
+                        border: subtextSize === s ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: subtextSize === s ? 'var(--ink)' : 'transparent',
+                        color: subtextSize === s ? 'var(--paper)' : 'var(--muted)', cursor: 'pointer',
+                      }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Carousel View */}
             {viewMode === 'carousel' && (
               <div>
-                <div
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                  style={{
-                    overflow: 'hidden',
-                    borderRadius: '12px',
-                    marginBottom: '1rem',
-                  }}
-                >
-                  <div
-                    className="carousel-track"
-                    style={{
-                      display: 'flex',
-                      transform: `translateX(-${currentSlide * 100}%)`,
-                    }}
-                  >
+                <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+                  style={{ overflow: 'hidden', borderRadius: '12px', marginBottom: '1rem' }}>
+                  <div className="carousel-track" style={{ display: 'flex', transform: `translateX(-${currentSlide * 100}%)` }}>
                     {slides.map((slide, i) => (
-                      <div
-                        key={i}
-                        onClick={() => copySlide(slide, i)}
-                        style={{
-                          minWidth: '100%',
-                          aspectRatio: '1 / 1',
-                          background: copiedIndex === i ? 'var(--accent)' : 'var(--ink)',
-                          color: 'var(--paper)',
-                          padding: 'clamp(1.5rem, 5vw, 3rem)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer',
-                          transition: 'background 0.3s ease',
-                        }}
-                      >
+                      <div key={i} style={{
+                        minWidth: '100%', aspectRatio: '1 / 1', background: theme.bg, color: theme.fg,
+                        padding: 'clamp(1.5rem, 5vw, 3rem)', display: 'flex', flexDirection: 'column',
+                        justifyContent: 'space-between', transition: 'background 0.3s ease',
+                      }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{
-                            fontSize: '0.6rem', fontFamily: 'var(--font-mono)',
-                            textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4,
-                          }}>
+                          <span style={{ fontSize: '0.55rem', fontFamily: theme.bodyFont, textTransform: 'uppercase', letterSpacing: '0.1em', color: theme.muted }}>
                             {ROLE_LABELS[slide.role] || slide.role}
                           </span>
-                          <span style={{
-                            fontSize: '0.6rem', fontFamily: 'var(--font-mono)', opacity: 0.3,
-                          }}>
-                            {copiedIndex === i ? '✓ copied' : `${i + 1}/${slides.length}`}
+                          <span style={{ fontSize: '0.55rem', fontFamily: theme.bodyFont, color: theme.muted }}>
+                            {i + 1}/{slides.length}
                           </span>
                         </div>
-
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <p style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: 'clamp(1.3rem, 4vw, 2rem)',
-                            lineHeight: 1.2,
-                            letterSpacing: '-0.02em',
-                            marginBottom: slide.subtext ? '0.75rem' : 0,
-                          }}>
+                          <div contentEditable suppressContentEditableWarning
+                            onBlur={(e) => updateSlideText(i, 'headline', e.currentTarget.textContent || '')}
+                            style={{
+                              fontFamily: theme.headlineFont, fontSize: HSIZES[headlineSize - 1],
+                              lineHeight: 1.2, letterSpacing: '-0.02em',
+                              marginBottom: slide.subtext ? '0.75rem' : 0,
+                              outline: 'none', cursor: 'text',
+                              borderBottom: '1px solid transparent', transition: 'border-color 0.2s',
+                            }}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = theme.accent }}
+                            onBlurCapture={(e) => { e.currentTarget.style.borderColor = 'transparent' }}>
                             {slide.headline}
-                          </p>
+                          </div>
                           {slide.subtext && (
-                            <p style={{
-                              fontSize: 'clamp(0.8rem, 2vw, 0.95rem)',
-                              lineHeight: 1.5,
-                              opacity: 0.5,
-                            }}>
+                            <div contentEditable suppressContentEditableWarning
+                              onBlur={(e) => updateSlideText(i, 'subtext', e.currentTarget.textContent || '')}
+                              style={{
+                                fontSize: SSIZES[subtextSize - 1], lineHeight: 1.5, color: theme.muted,
+                                fontFamily: theme.bodyFont, outline: 'none', cursor: 'text',
+                                borderBottom: '1px solid transparent', transition: 'border-color 0.2s',
+                              }}
+                              onFocus={(e) => { e.currentTarget.style.borderColor = theme.accent }}
+                              onBlurCapture={(e) => { e.currentTarget.style.borderColor = 'transparent' }}>
                               {slide.subtext}
-                            </p>
+                            </div>
                           )}
                         </div>
-
-                        <div style={{
-                          fontSize: '0.6rem', opacity: 0.2,
-                          fontFamily: 'var(--font-mono)',
-                        }}>
-                          tap to copy
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.5rem', color: theme.muted, fontFamily: theme.bodyFont }}>click text to edit</span>
+                          <button onClick={() => copySlide(slide, i)} className="btn" style={{
+                            fontSize: '0.55rem', fontFamily: theme.bodyFont, color: theme.muted,
+                            background: 'none', border: `1px solid ${theme.muted}`,
+                            padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer',
+                          }}>{copiedIndex === i ? '✓ copied' : 'copy'}</button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
                 {/* Dots + arrows */}
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                  <button
-                    onClick={() => setCurrentSlide(c => Math.max(0, c - 1))}
-                    disabled={currentSlide === 0}
-                    className="btn"
-                    style={{
-                      background: 'none', border: 'none',
-                      fontSize: '1.2rem',
+                  <button onClick={() => setCurrentSlide(c => Math.max(0, c - 1))} disabled={currentSlide === 0}
+                    className="btn" style={{ background: 'none', border: 'none', fontSize: '1.2rem',
                       color: currentSlide === 0 ? 'var(--border)' : 'var(--ink)',
-                      cursor: currentSlide === 0 ? 'default' : 'pointer',
-                      padding: '0.25rem 0.5rem',
-                    }}
-                  >
-                    ‹
-                  </button>
+                      cursor: currentSlide === 0 ? 'default' : 'pointer', padding: '0.25rem 0.5rem' }}>‹</button>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {slides.map((_, i) => (
-                      <div
-                        key={i}
-                        onClick={() => setCurrentSlide(i)}
-                        style={{
-                          width: currentSlide === i ? '20px' : '6px',
-                          height: '6px',
-                          borderRadius: '3px',
-                          background: currentSlide === i ? 'var(--ink)' : 'var(--border)',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                        }}
-                      />
+                      <div key={i} onClick={() => setCurrentSlide(i)} style={{
+                        width: currentSlide === i ? '20px' : '6px', height: '6px', borderRadius: '3px',
+                        background: currentSlide === i ? 'var(--ink)' : 'var(--border)',
+                        cursor: 'pointer', transition: 'all 0.2s ease',
+                      }} />
                     ))}
                   </div>
-                  <button
-                    onClick={() => setCurrentSlide(c => Math.min(slides.length - 1, c + 1))}
-                    disabled={currentSlide === slides.length - 1}
-                    className="btn"
-                    style={{
-                      background: 'none', border: 'none',
-                      fontSize: '1.2rem',
+                  <button onClick={() => setCurrentSlide(c => Math.min(slides.length - 1, c + 1))}
+                    disabled={currentSlide === slides.length - 1} className="btn"
+                    style={{ background: 'none', border: 'none', fontSize: '1.2rem',
                       color: currentSlide === slides.length - 1 ? 'var(--border)' : 'var(--ink)',
-                      cursor: currentSlide === slides.length - 1 ? 'default' : 'pointer',
-                      padding: '0.25rem 0.5rem',
-                    }}
-                  >
-                    ›
-                  </button>
+                      cursor: currentSlide === slides.length - 1 ? 'default' : 'pointer', padding: '0.25rem 0.5rem' }}>›</button>
                 </div>
               </div>
             )}
 
-            {/* ── Grid View ── */}
+            {/* Grid View */}
             {viewMode === 'grid' && (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                gap: '0.75rem',
-              }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
                 {slides.map((slide, i) => (
-                  <div
-                    key={i}
-                    className={`slide-card fade-up`}
-                    style={{
-                      animationDelay: `${i * 0.06}s`,
-                      opacity: 0,
-                      background: copiedIndex === i ? 'var(--accent)' : 'var(--ink)',
-                      position: 'relative',
-                    }}
-                    onClick={() => copySlide(slide, i)}
-                  >
+                  <div key={i} style={{
+                    aspectRatio: '1 / 1', background: theme.bg, color: theme.fg,
+                    borderRadius: '10px', overflow: 'hidden', padding: 'clamp(1rem, 3vw, 1.5rem)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative',
+                  }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{
-                        fontSize: '0.6rem', fontFamily: 'var(--font-mono)',
-                        textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.4,
-                      }}>
+                      <span style={{ fontSize: '0.5rem', fontFamily: theme.bodyFont, textTransform: 'uppercase', letterSpacing: '0.1em', color: theme.muted }}>
                         {ROLE_LABELS[slide.role] || slide.role}
                       </span>
-                      <span style={{
-                        fontSize: '0.6rem', fontFamily: 'var(--font-mono)', opacity: 0.3,
-                      }}>
-                        {copiedIndex === i ? '✓ copied' : `${i + 1}/${slides.length}`}
-                      </span>
+                      <span style={{ fontSize: '0.5rem', fontFamily: theme.bodyFont, color: theme.muted }}>{i + 1}</span>
                     </div>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <p style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
-                        lineHeight: 1.25,
-                        letterSpacing: '-0.01em',
-                        marginBottom: slide.subtext ? '0.5rem' : 0,
-                      }}>
-                        {slide.headline}
-                      </p>
+                      <div contentEditable suppressContentEditableWarning
+                        onBlur={(e) => updateSlideText(i, 'headline', e.currentTarget.textContent || '')}
+                        style={{
+                          fontFamily: theme.headlineFont, fontSize: `calc(${HSIZES[headlineSize - 1]} * 0.75)`,
+                          lineHeight: 1.2, letterSpacing: '-0.02em',
+                          marginBottom: slide.subtext ? '0.5rem' : 0, outline: 'none', cursor: 'text',
+                        }}>{slide.headline}</div>
                       {slide.subtext && (
-                        <p style={{ fontSize: '0.75rem', lineHeight: 1.5, opacity: 0.5 }}>
-                          {slide.subtext}
-                        </p>
+                        <div contentEditable suppressContentEditableWarning
+                          onBlur={(e) => updateSlideText(i, 'subtext', e.currentTarget.textContent || '')}
+                          style={{
+                            fontSize: `calc(${SSIZES[subtextSize - 1]} * 0.85)`, lineHeight: 1.4,
+                            color: theme.muted, fontFamily: theme.bodyFont, outline: 'none', cursor: 'text',
+                          }}>{slide.subtext}</div>
                       )}
                     </div>
-                    <div className="copy-hint" style={{
-                      fontSize: '0.65rem',
-                      fontFamily: 'var(--font-mono)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                      <span style={{ opacity: copiedIndex === i ? 1 : 0.2 }}>
-                        {copiedIndex === i ? '✓ copied to clipboard' : 'click to copy'}
-                      </span>
-                      <span style={{
-                        background: 'var(--paper)',
-                        color: 'var(--ink)',
-                        padding: '0.3rem 0.6rem',
-                        borderRadius: '4px',
-                        fontSize: '0.6rem',
-                        fontWeight: 600,
-                        opacity: 0,
-                        transition: 'opacity 0.15s ease',
-                      }} className="copy-btn-hover">
-                        COPY
-                      </span>
-                    </div>
+                    <button onClick={() => copySlide(slide, i)} className="btn" style={{
+                      alignSelf: 'flex-end', fontSize: '0.5rem', fontFamily: theme.bodyFont,
+                      color: copiedIndex === i ? theme.accent : theme.muted,
+                      background: 'none', border: `1px solid ${theme.muted}`,
+                      padding: '0.15rem 0.4rem', borderRadius: '3px', cursor: 'pointer',
+                    }}>{copiedIndex === i ? '✓ copied' : 'copy'}</button>
                   </div>
                 ))}
               </div>
             )}
 
             {/* Action row */}
-            <div style={{
-              marginTop: '1.5rem',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '0.75rem',
-              flexWrap: 'wrap',
-            }}>
+            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               {isSignedIn && (
-                <button
-                  onClick={handleSaveDeck}
-                  disabled={saving || saved}
-                  className="btn"
-                  style={{
-                    background: saved ? 'var(--accent)' : 'var(--ink)',
-                    border: 'none',
-                    color: 'var(--paper)',
-                    padding: '0.55rem 1.25rem',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.72rem',
-                    borderRadius: '6px',
-                    letterSpacing: '0.04em',
-                    cursor: saving ? 'wait' : 'pointer',
-                  }}
-                >
-                  {saved ? '✓ Saved' : saving ? 'Saving...' : '♡ Save deck'}
-                </button>
+                <button onClick={handleSaveDeck} disabled={saving || saved} className="btn" style={{
+                  background: saved ? 'var(--accent)' : 'var(--ink)', border: 'none', color: 'var(--paper)',
+                  padding: '0.55rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
+                  borderRadius: '6px', letterSpacing: '0.04em', cursor: saving ? 'wait' : 'pointer',
+                }}>{saved ? '✓ Saved' : saving ? 'Saving...' : '♡ Save deck'}</button>
               )}
               {!isSignedIn && (
                 <SignInButton mode="modal">
                   <button className="btn" style={{
-                    background: 'var(--ink)',
-                    border: 'none',
-                    color: 'var(--paper)',
-                    padding: '0.55rem 1.25rem',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.72rem',
-                    borderRadius: '6px',
-                    letterSpacing: '0.04em',
-                    cursor: 'pointer',
-                  }}>
-                    Sign in to save
-                  </button>
+                    background: 'var(--ink)', border: 'none', color: 'var(--paper)',
+                    padding: '0.55rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
+                    borderRadius: '6px', letterSpacing: '0.04em', cursor: 'pointer',
+                  }}>Sign in to save</button>
                 </SignInButton>
               )}
               <button onClick={handleGenerate} className="btn" style={{
-                background: 'none',
-                border: '1px solid var(--border)',
-                color: 'var(--muted)',
-                padding: '0.55rem 1.25rem',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.72rem',
-                borderRadius: '6px',
-                letterSpacing: '0.04em',
-              }}>
-                ↺ Regenerate
-              </button>
+                background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
+                padding: '0.55rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
+                borderRadius: '6px', letterSpacing: '0.04em',
+              }}>↺ Regenerate</button>
               <button onClick={() => { setAppState('configure'); setSlides([]) }} className="btn" style={{
-                background: 'none',
-                border: '1px solid var(--border)',
-                color: 'var(--muted)',
-                padding: '0.55rem 1.25rem',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.72rem',
-                borderRadius: '6px',
-                letterSpacing: '0.04em',
-              }}>
-                ← Reconfigure
-              </button>
+                background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
+                padding: '0.55rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem',
+                borderRadius: '6px', letterSpacing: '0.04em',
+              }}>← Reconfigure</button>
             </div>
           </div>
         )}
